@@ -33,6 +33,20 @@
 
 **Implementation Status**:
 
+#### Main Project URLs (advanced_api_project/urls.py):
+
+```python
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),  # ✅ API URLs included
+]
+```
+
+#### API URLs (api/urls.py):
+
 ```python
 urlpatterns = [
     # API overview
