@@ -61,7 +61,7 @@ class BookListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     
     # Advanced query capabilities
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = BookFilter
     search_fields = ['title', 'author__name']
     ordering_fields = ['title', 'publication_year', 'author__name', 'author__id']
@@ -224,7 +224,7 @@ class AuthorListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     
     # Advanced query capabilities
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = AuthorFilter
     search_fields = ['name', 'books__title']
     ordering_fields = ['name', 'id']
