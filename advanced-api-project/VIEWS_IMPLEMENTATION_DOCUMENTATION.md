@@ -48,6 +48,10 @@ urlpatterns = [
     path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-update'),
     path('books/<int:pk>/delete/', views.BookDeleteView.as_view(), name='book-delete'),
 
+    # Additional simple URL patterns for update and delete
+    path('books/update/', views.BookUpdateView.as_view(), name='book-update-simple'),
+    path('books/delete/', views.BookDeleteView.as_view(), name='book-delete-simple'),
+
     # Authors API endpoints
     path('authors/', views.AuthorListView.as_view(), name='author-list'),
     path('authors/<int:pk>/', views.AuthorDetailView.as_view(), name='author-detail'),
@@ -238,13 +242,15 @@ def create(self, request, *args, **kwargs):
 
 ### Books API
 
-| Endpoint                  | Method    | Auth Required | Description     |
-| ------------------------- | --------- | ------------- | --------------- |
-| `/api/books/`             | GET       | No            | List all books  |
-| `/api/books/<id>/`        | GET       | No            | Get single book |
-| `/api/books/create/`      | POST      | Yes           | Create new book |
-| `/api/books/<id>/update/` | PUT/PATCH | Yes           | Update book     |
-| `/api/books/<id>/delete/` | DELETE    | Yes           | Delete book     |
+| Endpoint                  | Method    | Auth Required | Description           |
+| ------------------------- | --------- | ------------- | --------------------- |
+| `/api/books/`             | GET       | No            | List all books        |
+| `/api/books/<id>/`        | GET       | No            | Get single book       |
+| `/api/books/create/`      | POST      | Yes           | Create new book       |
+| `/api/books/<id>/update/` | PUT/PATCH | Yes           | Update book (with ID) |
+| `/api/books/<id>/delete/` | DELETE    | Yes           | Delete book (with ID) |
+| `/api/books/update/`      | PUT/PATCH | Yes           | Update book (simple)  |
+| `/api/books/delete/`      | DELETE    | Yes           | Delete book (simple)  |
 
 ### Authors API
 

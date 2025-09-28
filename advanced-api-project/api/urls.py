@@ -15,6 +15,10 @@ urlpatterns = [
     path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-update'),
     path('books/<int:pk>/delete/', views.BookDeleteView.as_view(), name='book-delete'),
     
+    # Additional simple URL patterns for update and delete
+    path('books/update/', views.BookUpdateView.as_view(), name='book-update-simple'),
+    path('books/delete/', views.BookDeleteView.as_view(), name='book-delete-simple'),
+    
     # Authors API endpoints (read-only)
     path('authors/', views.AuthorListView.as_view(), name='author-list'),
     path('authors/<int:pk>/', views.AuthorDetailView.as_view(), name='author-detail'),
