@@ -4,25 +4,71 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from .models import Author, Book
 from .serializers import AuthorSerializer, BookSerializer
+from .filters import BookFilter, AuthorFilter
 
 
 class BookListView(generics.ListAPIView):
     """
-    ListView for retrieving all books.
+    ListView for retrieving all books with advanced query capabilities.
     
-    This view provides read-only access to all books in the database.
+    This view provides read-only access to all books in the database with:
+    - Filtering: Filter by title, author, publication year
+    - Searching: Search across title and author name
+    - Ordering: Sort by any field (title, publication_year, author__name)
+    - Pagination: Results are paginated (10 items per page)
+    
     No authentication required for read access.
+    
+    Query Parameters:
+    - Filtering:
+      * title: Filter by title (case-insensitive contains)
+      * title_exact: Filter by exact title match
+      * author_name: Filter by author name (case-insensitive contains)
+      * author_id: Filter by author ID
+      * author: Filter by author name or ID
+      * publication_year: Filter by exact publication year
+      * publication_year_min: Filter by minimum publication year
+      * publication_year_max: Filter by maximum publication year
+      * publication_year_range_min: Start of publication year range
+      * publication_year_range_max: End of publication year range
+      * search: Search across title and author name
+    
+    - Ordering:
+      * ordering: Sort by field (e.g., 'title', '-publication_year', 'author__name')
+      * Available fields: title, publication_year, author__name, author__id
+    
+    - Pagination:
+      * page: Page number
+      * page_size: Number of items per page (max 100)
+    
+    Examples:
+    - GET /api/books/?title=harry
+    - GET /api/books/?author_name=rowling
+    - GET /api/books/?publication_year_min=1990&publication_year_max=2000
+    - GET /api/books/?search=potter
+    - GET /api/books/?ordering=-publication_year
+    - GET /api/books/?page=2&page_size=5
     """
     queryset = Book.objects.select_related('author').all()
     serializer_class = BookSerializer
     permission_classes = [permissions.AllowAny]
     
+    # Advanced query capabilities
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = BookFilter
+    search_fields = ['title', 'author__name']
+    ordering_fields = ['title', 'publication_year', 'author__name', 'author__id']
+    ordering = ['title']  # Default ordering
+    
     def get_queryset(self):
         """
         Custom queryset with author information to optimize database queries.
+        Includes filtering, searching, and ordering capabilities.
         """
         return Book.objects.select_related('author').all()
 
@@ -139,14 +185,48 @@ class BookDeleteView(generics.DestroyAPIView):
 
 class AuthorListView(generics.ListAPIView):
     """
-    ListView for retrieving all authors with their books.
+    ListView for retrieving all authors with their books and advanced query capabilities.
     
-    This view provides read-only access to all authors and their related books.
+    This view provides read-only access to all authors and their related books with:
+    - Filtering: Filter by name, book count
+    - Searching: Search across author name and book titles
+    - Ordering: Sort by name or book count
+    - Pagination: Results are paginated (10 items per page)
+    
     No authentication required for read access.
+    
+    Query Parameters:
+    - Filtering:
+      * name: Filter by author name (case-insensitive contains)
+      * name_exact: Filter by exact author name match
+      * book_count_min: Filter authors with minimum number of books
+      * book_count_max: Filter authors with maximum number of books
+      * search: Search across author name and book titles
+    
+    - Ordering:
+      * ordering: Sort by field (e.g., 'name', '-name')
+      * Available fields: name, id
+    
+    - Pagination:
+      * page: Page number
+      * page_size: Number of items per page (max 100)
+    
+    Examples:
+    - GET /api/authors/?name=rowling
+    - GET /api/authors/?book_count_min=2
+    - GET /api/authors/?search=potter
+    - GET /api/authors/?ordering=name
     """
     queryset = Author.objects.prefetch_related('books').all()
     serializer_class = AuthorSerializer
     permission_classes = [permissions.AllowAny]
+    
+    # Advanced query capabilities
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = AuthorFilter
+    search_fields = ['name', 'books__title']
+    ordering_fields = ['name', 'id']
+    ordering = ['name']  # Default ordering
 
 
 class AuthorDetailView(generics.RetrieveAPIView):
@@ -203,6 +283,44 @@ def api_overview(request):
         'Authors API': {
             'List Authors (Read-only)': '/api/authors/',
             'Author Detail (Read-only)': '/api/authors/<id>/',
+        },
+        'Advanced Query Capabilities': {
+            'Filtering': {
+                'Books': 'Filter by title, author, publication year',
+                'Authors': 'Filter by name, book count',
+                'Examples': [
+                    '/api/books/?title=harry',
+                    '/api/books/?author_name=rowling',
+                    '/api/books/?publication_year_min=1990',
+                    '/api/authors/?name=rowling',
+                    '/api/authors/?book_count_min=2'
+                ]
+            },
+            'Searching': {
+                'Books': 'Search across title and author name',
+                'Authors': 'Search across author name and book titles',
+                'Examples': [
+                    '/api/books/?search=potter',
+                    '/api/authors/?search=harry'
+                ]
+            },
+            'Ordering': {
+                'Books': 'Sort by title, publication_year, author__name',
+                'Authors': 'Sort by name, id',
+                'Examples': [
+                    '/api/books/?ordering=-publication_year',
+                    '/api/books/?ordering=title',
+                    '/api/authors/?ordering=name'
+                ]
+            },
+            'Pagination': {
+                'Default': '10 items per page',
+                'Custom': 'Use ?page=N&page_size=M',
+                'Examples': [
+                    '/api/books/?page=2',
+                    '/api/books/?page=1&page_size=5'
+                ]
+            }
         },
         'Other Endpoints': {
             'Admin Panel': '/admin/',
