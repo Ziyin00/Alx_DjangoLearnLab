@@ -249,12 +249,15 @@ class AuthenticationTestCase(APITestCase):
     """
     
     def setUp(self):
-        """Set up test user."""
+        """Set up test user and data."""
         self.user = User.objects.create_user(
             username='testuser',
             password='testpass123',
             email='test@example.com'
         )
+        
+        # Create test author for session authentication tests
+        self.author = Author.objects.create(name='Test Author')
         
         self.client = APIClient()
         
@@ -292,6 +295,69 @@ class AuthenticationTestCase(APITestCase):
         
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        
+    def test_session_authentication_success(self):
+        """Test session authentication with login."""
+        # Login using session authentication
+        login_success = self.client.login(username='testuser', password='testpass123')
+        self.assertTrue(login_success)
+        
+        # Test that we can access authenticated endpoints
+        url = reverse('book-create')
+        data = {
+            'title': 'Session Authenticated Book',
+            'publication_year': 2020,
+            'author': self.author.pk
+        }
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+    def test_session_authentication_failure(self):
+        """Test session authentication with wrong credentials."""
+        # Try to login with wrong password
+        login_success = self.client.login(username='testuser', password='wrongpassword')
+        self.assertFalse(login_success)
+        
+        # Test that we cannot access authenticated endpoints
+        url = reverse('book-create')
+        data = {
+            'title': 'Unauthorized Book',
+            'publication_year': 2020,
+            'author': self.author.pk
+        }
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+    def test_session_authentication_logout(self):
+        """Test that logout prevents access to authenticated endpoints."""
+        # Login first
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Verify we can access authenticated endpoints
+        url = reverse('book-create')
+        data = {
+            'title': 'Before Logout Book',
+            'publication_year': 2020,
+            'author': self.author.pk
+        }
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Logout
+        self.client.logout()
+        
+        # Verify we cannot access authenticated endpoints after logout
+        data = {
+            'title': 'After Logout Book',
+            'publication_year': 2020,
+            'author': self.author.pk
+        }
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class AdvancedQueryTestCase(APITestCase):
