@@ -153,6 +153,20 @@ def create(self, request, *args, **kwargs):
 
 ### Generic Views Architecture
 
+#### Import Statements
+
+```python
+from rest_framework import generics, permissions, status
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
+from django.shortcuts import get_object_or_404
+from .models import Author, Book
+from .serializers import AuthorSerializer, BookSerializer
+```
+
 #### Book Views
 
 ```python
