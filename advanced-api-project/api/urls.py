@@ -1,9 +1,5 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from . import views
-
-router = DefaultRouter()
-router.register(r'books_all', views.BookViewSet, basename='book_all')
 
 urlpatterns = [
     # API overview (accessible without authentication)
@@ -12,9 +8,14 @@ urlpatterns = [
     # Authentication endpoint
     path('auth-token/', views.CustomObtainAuthToken.as_view(), name='api_token_auth'),
     
-    # Route for the BookList view (ListAPIView)
-    path('books/', views.BookList.as_view(), name='book-list'),
+    # Books API endpoints
+    path('books/', views.BookListView.as_view(), name='book-list'),
+    path('books/<int:pk>/', views.BookDetailView.as_view(), name='book-detail'),
+    path('books/create/', views.BookCreateView.as_view(), name='book-create'),
+    path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-update'),
+    path('books/<int:pk>/delete/', views.BookDeleteView.as_view(), name='book-delete'),
     
-    # Include the router URLs for BookViewSet (all CRUD operations)
-    path('', include(router.urls)),  # This includes all routes registered with the router
+    # Authors API endpoints (read-only)
+    path('authors/', views.AuthorListView.as_view(), name='author-list'),
+    path('authors/<int:pk>/', views.AuthorDetailView.as_view(), name='author-detail'),
 ]
