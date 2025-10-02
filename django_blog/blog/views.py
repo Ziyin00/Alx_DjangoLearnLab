@@ -1,66 +1,50 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
 from django.contrib import messages
-from .models import Post
+from .models import Post, Comment
 
 
-class PostListView(ListView):
-    model = Post
-    template_name = 'blog/home.html'
-    context_object_name = 'posts'
-    paginate_by = 5
-
-    def get_queryset(self):
-        return Post.objects.filter(published=True).order_by('-created_at')
+def home(request):
+    posts = Post.objects.filter(published=True)[:5]
+    context = {
+        'posts': posts,
+    }
+    return render(request, 'blog/home.html', context)
 
 
-class PostDetailView(DetailView):
-    model = Post
-    template_name = 'blog/post_detail.html'
-    context_object_name = 'post'
-
-
-class PostCreateView(LoginRequiredMixin, CreateView):
-    model = Post
-    template_name = 'blog/post_form.html'
-    fields = ['title', 'content', 'published']
-
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        messages.success(self.request, 'Post created successfully!')
-        return super().form_valid(form)
-
-
-class PostUpdateView(LoginRequiredMixin, UpdateView):
-    model = Post
-    template_name = 'blog/post_form.html'
-    fields = ['title', 'content', 'published']
-
-    def get_queryset(self):
-        return Post.objects.filter(author=self.request.user)
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Post updated successfully!')
-        return super().form_valid(form)
-
-
-class PostDeleteView(LoginRequiredMixin, DeleteView):
-    model = Post
-    template_name = 'blog/post_confirm_delete.html'
-    success_url = reverse_lazy('blog:home')
-
-    def get_queryset(self):
-        return Post.objects.filter(author=self.request.user)
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Post deleted successfully!')
-        return super().delete(request, *args, **kwargs)
+def post_detail(request, pk):
+    post = get_object_or_404(Post, pk=pk, published=True)
+    comments = post.comments.all()
+    
+    if request.method == 'POST' and request.user.is_authenticated:
+        content = request.POST.get('content')
+        if content:
+            Comment.objects.create(
+                post=post,
+                author=request.user,
+                content=content
+            )
+            messages.success(request, 'Comment added successfully!')
+            return redirect('blog:post_detail', pk=pk)
+    
+    context = {
+        'post': post,
+        'comments': comments,
+    }
+    return render(request, 'blog/post_detail.html', context)
 
 
 @login_required
-def my_posts(request):
-    posts = Post.objects.filter(author=request.user).order_by('-created_at')
-    return render(request, 'blog/my_posts.html', {'posts': posts})
+def create_post(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        if title and content:
+            Post.objects.create(
+                title=title,
+                content=content,
+                author=request.user
+            )
+            messages.success(request, 'Post created successfully!')
+            return redirect('blog:home')
+    return render(request, 'blog/create_post.html')

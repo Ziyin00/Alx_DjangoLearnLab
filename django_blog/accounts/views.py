@@ -5,54 +5,84 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
-from .forms import CustomUserCreationForm, UserProfileForm
+from django.contrib.auth.models import User
+from .forms import CustomUserCreationForm, UserProfileForm, UserUpdateForm
+from .models import UserProfile
 
 
-class UserRegistrationView(CreateView):
-    form_class = CustomUserCreationForm
-    template_name = 'accounts/register.html'
-    success_url = reverse_lazy('blog:home')
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Registration successful! You are now logged in.')
-        login(self.request, self.object)
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, 'Please correct the errors below.')
-        return super().form_invalid(form)
-
-
-class UserLoginView(LoginView):
+class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
-
+    
     def get_success_url(self):
         return reverse_lazy('blog:home')
 
-    def form_valid(self, form):
-        messages.success(self.request, f'Welcome back, {form.get_user().first_name}!')
-        return super().form_valid(form)
 
-
-class UserLogoutView(LogoutView):
+class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('blog:home')
 
-    def dispatch(self, request, *args, **kwargs):
-        messages.info(request, 'You have been logged out successfully.')
-        return super().dispatch(request, *args, **kwargs)
+
+class RegisterView(CreateView):
+    form_class = CustomUserCreationForm
+    template_name = 'accounts/register.html'
+    success_url = reverse_lazy('accounts:login')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Account created successfully! Please log in.')
+        return response
 
 
 @login_required
 def profile_view(request):
+    try:
+        profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
             messages.success(request, 'Your profile has been updated successfully!')
             return redirect('accounts:profile')
     else:
-        form = UserProfileForm(instance=request.user)
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = UserProfileForm(instance=profile)
     
-    return render(request, 'accounts/profile.html', {'form': form})
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'profile': profile,
+    }
+    return render(request, 'accounts/profile.html', context)
+
+
+@login_required
+def profile_edit(request):
+    try:
+        profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    if request.method == 'POST':
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, 'Your profile has been updated successfully!')
+            return redirect('accounts:profile')
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = UserProfileForm(instance=profile)
+    
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+    }
+    return render(request, 'accounts/profile_edit.html', context)

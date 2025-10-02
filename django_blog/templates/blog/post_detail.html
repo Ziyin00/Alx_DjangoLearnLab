@@ -1,45 +1,101 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ post.title }} - Django Blog{% endblock %}
 
 {% block content %}
-<div class="container my-5">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card">
-                <div class="card-body">
-                    <h1 class="card-title">{{ post.title }}</h1>
-                    <p class="text-muted mb-4">
-                        <i class="fas fa-user"></i> {{ post.author.get_full_name|default:post.author.username }}
-                        <i class="fas fa-calendar ms-3"></i> {{ post.created_at|date:"F d, Y" }}
-                        {% if post.updated_at != post.created_at %}
-                            <i class="fas fa-edit ms-3"></i> Updated {{ post.updated_at|date:"F d, Y" }}
-                        {% endif %}
-                    </p>
-                    <hr>
+<div class="row">
+    <div class="col-md-8">
+        <article class="card">
+            <div class="card-body">
+                <h1 class="card-title">{{ post.title }}</h1>
+                <div class="card-text">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> {{ post.author.get_full_name|default:post.author.username }}
+                            <i class="fas fa-calendar ms-2"></i> {{ post.created_at|date:"F d, Y" }}
+                            {% if post.updated_at != post.created_at %}
+                                <i class="fas fa-edit ms-2"></i> Updated {{ post.updated_at|date:"F d, Y" }}
+                            {% endif %}
+                        </small>
+                    </div>
                     <div class="post-content">
                         {{ post.content|linebreaks }}
                     </div>
                 </div>
-                {% if user == post.author %}
-                    <div class="card-footer">
-                        <div class="btn-group" role="group">
-                            <a href="{% url 'blog:post_update' post.pk %}" class="btn btn-outline-primary">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <a href="{% url 'blog:post_delete' post.pk %}" class="btn btn-outline-danger">
-                                <i class="fas fa-trash"></i> Delete
-                            </a>
+            </div>
+        </article>
+        
+        <!-- Comments Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-comments"></i> Comments ({{ comments.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if comments %}
+                    {% for comment in comments %}
+                        <div class="comment">
+                            <div class="comment-author">{{ comment.author.get_full_name|default:comment.author.username }}</div>
+                            <div class="comment-date">{{ comment.created_at|date:"F d, Y H:i" }}</div>
+                            <div class="comment-content mt-2">{{ comment.content|linebreaks }}</div>
                         </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                {% endif %}
+                
+                {% if user.is_authenticated %}
+                    <hr>
+                    <h6>Add a Comment</h6>
+                    <form method="post" action="{% url 'blog:post_detail' post.pk %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <textarea class="form-control" name="content" rows="3" placeholder="Write your comment here..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-comment"></i> Post Comment
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="text-center mt-3">
+                        <p class="text-muted">Please <a href="{% url 'accounts:login' %}">login</a> to comment.</p>
                     </div>
                 {% endif %}
             </div>
-            
-            <div class="mt-4">
-                <a href="{% url 'blog:home' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Home
-                </a>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Post Information</h5>
             </div>
+            <div class="card-body">
+                <p><strong>Author:</strong> {{ post.author.get_full_name|default:post.author.username }}</p>
+                <p><strong>Published:</strong> {{ post.created_at|date:"F d, Y" }}</p>
+                {% if post.updated_at != post.created_at %}
+                    <p><strong>Updated:</strong> {{ post.updated_at|date:"F d, Y" }}</p>
+                {% endif %}
+                <p><strong>Comments:</strong> {{ comments.count }}</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-user"></i> About the Author</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>{{ post.author.get_full_name|default:post.author.username }}</strong></p>
+                <p class="text-muted">Member since {{ post.author.date_joined|date:"F Y" }}</p>
+                <p><strong>Posts:</strong> {{ post.author.post_set.count }}</p>
+                <p><strong>Comments:</strong> {{ post.author.comment_set.count }}</p>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <a href="{% url 'blog:home' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
         </div>
     </div>
 </div>
